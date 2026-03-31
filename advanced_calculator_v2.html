@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CalcPro — Advanced Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Noto+Sans+Tamil:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --accent:#7C3AED;--accent-light:#a78bfa;--accent-dark:#5b21b6;
+  --bg:#0f0f13;--surface:#18181f;--surface2:#22222d;--surface3:#2d2d3a;
+  --border:rgba(255,255,255,0.07);--text:#f0f0f5;--text2:#9090a8;--text3:#5f5f75;
+  --error:#f87171;--success:#4ade80;--r:16px;
+}
+.light{
+  --bg:#f4f3ff;--surface:#ffffff;--surface2:#ede9fe;--surface3:#ddd6fe;
+  --border:rgba(0,0,0,0.08);--text:#1a1a2e;--text2:#6b6b8a;--text3:#9090a8;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s;overflow-x:hidden}
+.tamil *{font-family:'Noto Sans Tamil','Syne',sans-serif}
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:500px;margin:0 auto}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border)}
+.header-title{font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.header-title span{color:var(--accent-light)}
+.hbtn{width:36px;height:36px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;outline:none}
+.hbtn:hover,.hbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* LANG SELECTOR */
+.lang-bar{display:flex;gap:4px;padding:8px 16px;overflow-x:auto;scrollbar-width:none;background:var(--bg)}
+.lang-bar::-webkit-scrollbar{display:none}
+.lang-btn{padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);white-space:nowrap;transition:all .2s;font-family:'Syne',sans-serif}
+.lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* NAV */
+.nav{display:flex;gap:4px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;font-size:12px;font-family:'Syne',sans-serif;font-weight:700;white-space:nowrap;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .22s}
+.nav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 4px 14px rgba(124,58,237,.3)}
+.nav-btn:hover:not(.active){background:var(--surface3);color:var(--text)}
+
+/* SCREENS */
+.screen{display:none;flex-direction:column;flex:1;padding:10px 14px 80px;animation:fadeUp .25s ease}
+.screen.active{display:flex}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* DISPLAY */
+.display{background:var(--surface);border-radius:var(--r);padding:14px 18px;margin-bottom:10px;border:1px solid var(--border);min-height:95px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden}
+.display::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent-light),var(--accent));background-size:200%;animation:shimmer 3s linear infinite}
+@keyframes shimmer{0%{background-position:200%}100%{background-position:-200%}}
+.d-expr{font-family:'Space Mono',monospace;font-size:13px;color:var(--text2);text-align:right;word-break:break-all;min-height:18px}
+.d-res{font-family:'Space Mono',monospace;font-size:38px;font-weight:700;text-align:right;word-break:break-all;color:var(--text);transition:all .2s;line-height:1.1}
+.d-res.error{color:var(--error)}
+.d-res.pop{animation:pop .2s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{0%{transform:scale(.9);opacity:.5}100%{transform:scale(1);opacity:1}}
+
+/* TAB BAR */
+.tabs{display:flex;background:var(--surface2);border-radius:12px;padding:3px;margin-bottom:10px;border:1px solid var(--border)}
+.tab-btn{flex:1;padding:7px;border-radius:9px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all .2s}
+.tab-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(124,58,237,.35)}
+
+/* BUTTONS */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.btn{border-radius:13px;border:none;cursor:pointer;font-family:'Space Mono',monospace;font-weight:700;font-size:17px;color:var(--text);background:var(--surface2);border:1px solid var(--border);transition:all .14s;position:relative;overflow:hidden;min-height:54px;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none}
+.btn:active{transform:scale(.92)}
+.btn.accent{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 4px 10px rgba(124,58,237,.3)}
+.btn.sec{background:var(--surface3);color:var(--accent-light)}
+.btn.danger{background:rgba(248,113,113,.12);color:var(--error);border-color:rgba(248,113,113,.2)}
+.btn.fn{font-size:11px;min-height:40px;background:rgba(124,58,237,.12);color:var(--accent-light);border-color:rgba(124,58,237,.2);font-family:'Syne',sans-serif;font-weight:800}
+.sci-wrap{display:flex;flex-direction:column;gap:6px}
+.sci-row{margin-bottom:0}
+
+/* CARDS & FIELDS */
+.card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:14px;margin-bottom:10px}
+.card-title{font-size:11px;font-weight:800;color:var(--accent-light);margin-bottom:12px;letter-spacing:.8px;text-transform:uppercase}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:700;letter-spacing:.3px}
+.field input,.field select{width:100%;padding:11px 13px;border-radius:11px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.field select{font-family:'Syne',sans-serif;font-size:13px;cursor:pointer}
+.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.12)}
+.row2{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end}
+.swap-btn{width:40px;height:42px;border-radius:11px;background:var(--surface3);border:1px solid var(--border);color:var(--accent-light);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.swap-btn:hover{background:var(--accent);color:#fff;transform:rotate(180deg)}
+
+/* RESULT */
+.res-box{background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(167,139,250,.08));border:1px solid rgba(124,58,237,.3);border-radius:var(--r);padding:18px;text-align:center;margin-bottom:10px;animation:fadeUp .3s ease}
+.res-label{font-size:11px;color:var(--accent-light);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;font-weight:700}
+.res-val{font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--text);word-break:break-all}
+.res-sub{font-size:12px;color:var(--text2);margin-top:5px}
+
+/* PRICE */
+.ppg-box{background:var(--accent);color:#fff;padding:12px 16px;border-radius:12px;text-align:center;margin-bottom:10px}
+.ppg-label{font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.5px}
+.ppg-val{font-family:'Space Mono',monospace;font-size:24px;font-weight:700}
+.pi{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface);border-radius:11px;border:1px solid var(--border);margin-bottom:7px;transition:all .2s;animation:fadeUp .3s ease}
+.pi:hover{border-color:rgba(124,58,237,.3);transform:translateX(2px)}
+.pi-label{font-size:13px;color:var(--text2);font-weight:600}
+.pi-val{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent-light)}
+
+/* GST */
+.gst-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.gst-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .2s;font-family:'Syne',sans-serif}
+.gst-pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.gst-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.gst-box{background:var(--surface2);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--border)}
+.gst-box-label{font-size:11px;color:var(--text2);font-weight:700;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.gst-box-val{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--accent-light)}
+.gst-box.highlight{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.3)}
+.gst-box.highlight .gst-box-val{color:var(--text);font-size:22px}
+
+/* EMI */
+.emi-result{background:linear-gradient(135deg,rgba(124,58,237,.2),rgba(167,139,250,.1));border:1px solid rgba(124,58,237,.3);border-radius:var(--r);padding:16px;margin-bottom:10px;animation:fadeUp .3s}
+.emi-main{text-align:center;margin-bottom:14px}
+.emi-main-label{font-size:12px;color:var(--accent-light);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.emi-main-val{font-family:'Space Mono',monospace;font-size:34px;font-weight:700;color:var(--text)}
+.emi-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.emi-item{background:var(--surface);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--border)}
+.emi-item-label{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.emi-item-val{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent-light);margin-top:4px}
+.progress-bar{height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-top:12px}
+.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent-light));transition:width .5s ease}
+
+/* HISTORY */
+.hist-empty{text-align:center;padding:40px 24px;color:var(--text3)}
+.hist-empty .ei{font-size:52px;margin-bottom:10px;opacity:.4}
+.hi{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surface);border-radius:11px;border:1px solid var(--border);margin-bottom:7px;cursor:pointer;transition:all .2s;animation:fadeUp .25s ease}
+.hi:hover{border-color:rgba(124,58,237,.3);background:var(--surface2)}
+.hi-badge{width:32px;height:32px;border-radius:9px;background:rgba(124,58,237,.15);color:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.hi-body{flex:1;min-width:0}
+.hi-expr{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi-time{font-size:10px;color:var(--text3);margin-top:2px}
+.hi-res{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--accent-light);flex-shrink:0;max-width:120px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* SETTINGS */
+.srow{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.srow:last-child{border-bottom:none}
+.slabel{font-size:14px;font-weight:600}
+.ssub{font-size:11px;color:var(--text2);margin-top:2px}
+.color-dots{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.cdot{width:30px;height:30px;border-radius:50%;cursor:pointer;transition:all .2s;border:3px solid transparent}
+.cdot.active{border-color:var(--text);transform:scale(1.15);box-shadow:0 0 10px currentColor}
+.theme-btns{display:flex;gap:6px}
+.tbtn{padding:5px 12px;border-radius:9px;font-size:11px;font-weight:700;background:var(--surface2);color:var(--text2);border:1px solid var(--border);cursor:pointer;transition:all .2s;font-family:'Syne',sans-serif}
+.tbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.rates-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}
+.rate-item{display:flex;justify-content:space-between;padding:7px 10px;background:var(--surface2);border-radius:9px}
+.rate-cc{font-size:12px;font-weight:700}
+.rate-val{font-size:11px;color:var(--text2);font-family:'Space Mono',monospace}
+
+/* UTILS */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.sec-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.clear-btn{font-size:12px;color:var(--error);background:none;border:none;cursor:pointer;font-weight:700;font-family:'Syne',sans-serif;padding:3px 8px;border-radius:6px}
+.pdf-btn{font-size:12px;color:var(--success);background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);cursor:pointer;font-weight:700;font-family:'Syne',sans-serif;padding:5px 12px;border-radius:8px;display:flex;align-items:center;gap:4px}
+.deg-tog{padding:4px 12px;border-radius:18px;font-size:11px;font-weight:700;background:var(--surface3);color:var(--text2);border:1px solid var(--border);cursor:pointer;transition:all .2s;font-family:'Syne',sans-serif}
+.deg-tog.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.scrollable{overflow-y:auto}
+.scrollable::-webkit-scrollbar{width:3px}
+.scrollable::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
+.tip{font-size:12px;color:var(--text2);padding:9px 12px;background:rgba(124,58,237,.08);border-radius:10px;line-height:1.6;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-title">Calc<span>Pro</span></div>
+  <div style="display:flex;gap:6px">
+    <button class="hbtn" id="themeToggle" onclick="toggleTheme()">🌙</button>
+    <button class="hbtn" onclick="showScreen('settings')">⚙️</button>
+  </div>
+</div>
+
+<!-- LANGUAGE BAR -->
+<div class="lang-bar" id="langBar"></div>
+
+<!-- NAV -->
+<div class="nav" id="mainNav"></div>
+
+<!-- ═══════ CALCULATOR ═══════ -->
+<div class="screen active scrollable" id="screen-calculator">
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBasic" onclick="switchCalcTab('basic')" data-i18n="basic"></button>
+    <button class="tab-btn" id="tabSci" onclick="switchCalcTab('sci')" data-i18n="scientific"></button>
+  </div>
+  <div class="display">
+    <div class="d-expr" id="dispExpr">0</div>
+    <div class="d-res" id="dispResult">0</div>
+  </div>
+
+  <!-- BASIC -->
+  <div id="basicGrid" class="grid4" style="gap:7px">
+    <button class="btn danger" onclick="calcClear()" data-i18n="clear"></button>
+    <button class="btn sec" onclick="calcSign()">±</button>
+    <button class="btn sec" onclick="calcAppend('%')">%</button>
+    <button class="btn accent" onclick="calcAppend('÷')">÷</button>
+    <button class="btn" onclick="calcAppend('7')">7</button>
+    <button class="btn" onclick="calcAppend('8')">8</button>
+    <button class="btn" onclick="calcAppend('9')">9</button>
+    <button class="btn accent" onclick="calcAppend('×')">×</button>
+    <button class="btn" onclick="calcAppend('4')">4</button>
+    <button class="btn" onclick="calcAppend('5')">5</button>
+    <button class="btn" onclick="calcAppend('6')">6</button>
+    <button class="btn accent" onclick="calcAppend('-')">−</button>
+    <button class="btn" onclick="calcAppend('1')">1</button>
+    <button class="btn" onclick="calcAppend('2')">2</button>
+    <button class="btn" onclick="calcAppend('3')">3</button>
+    <button class="btn accent" onclick="calcAppend('+')">+</button>
+    <button class="btn" onclick="calcAppend('0')" style="grid-column:span 2">0</button>
+    <button class="btn sec" onclick="calcDot()">.</button>
+    <button class="btn accent" onclick="calcEqual()">=</button>
+  </div>
+  <div id="basicExtra" class="grid4" style="gap:7px;margin-top:7px">
+    <button class="btn sec" onclick="calcBackspace()" style="font-size:20px">⌫</button>
+    <button class="btn sec" onclick="calcAppend('(')"> ( </button>
+    <button class="btn sec" onclick="calcAppend(')')"> ) </button>
+    <button class="btn sec" onclick="calcAppend('^')">xⁿ</button>
+  </div>
+
+  <!-- SCIENTIFIC -->
+  <div id="sciGrid" class="sci-wrap" style="display:none">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+      <button class="deg-tog on" id="degToggle" onclick="toggleDeg()">DEG</button>
+    </div>
+    <div class="grid5 sci-row">
+      <button class="btn fn" onclick="sciApp('sin(')">sin</button>
+      <button class="btn fn" onclick="sciApp('cos(')">cos</button>
+      <button class="btn fn" onclick="sciApp('tan(')">tan</button>
+      <button class="btn fn" onclick="sciApp('π')">π</button>
+      <button class="btn fn" onclick="sciApp('e')">e</button>
+    </div>
+    <div class="grid5 sci-row">
+      <button class="btn fn" onclick="sciApp('asin(')">asin</button>
+      <button class="btn fn" onclick="sciApp('acos(')">acos</button>
+      <button class="btn fn" onclick="sciApp('atan(')">atan</button>
+      <button class="btn fn" onclick="sciApp('log(')">log</button>
+      <button class="btn fn" onclick="sciApp('ln(')">ln</button>
+    </div>
+    <div class="grid5 sci-row">
+      <button class="btn fn" onclick="sciApp('√(')">√</button>
+      <button class="btn fn" onclick="sciApp('^2')">x²</button>
+      <button class="btn fn" onclick="sciApp('^3')">x³</button>
+      <button class="btn fn" onclick="sciApp('(')"> ( </button>
+      <button class="btn fn" onclick="sciApp(')')"> ) </button>
+    </div>
+    <div class="grid4 sci-row">
+      <button class="btn danger" onclick="calcClear()">C</button>
+      <button class="btn sec" onclick="calcBackspace()">⌫</button>
+      <button class="btn sec" onclick="calcAppend('%')">%</button>
+      <button class="btn accent" onclick="calcAppend('÷')">÷</button>
+    </div>
+    <div class="grid4 sci-row"><button class="btn" onclick="calcAppend('7')">7</button><button class="btn" onclick="calcAppend('8')">8</button><button class="btn" onclick="calcAppend('9')">9</button><button class="btn accent" onclick="calcAppend('×')">×</button></div>
+    <div class="grid4 sci-row"><button class="btn" onclick="calcAppend('4')">4</button><button class="btn" onclick="calcAppend('5')">5</button><button class="btn" onclick="calcAppend('6')">6</button><button class="btn accent" onclick="calcAppend('-')">−</button></div>
+    <div class="grid4 sci-row"><button class="btn" onclick="calcAppend('1')">1</button><button class="btn" onclick="calcAppend('2')">2</button><button class="btn" onclick="calcAppend('3')">3</button><button class="btn accent" onclick="calcAppend('+')">+</button></div>
+    <div class="grid4 sci-row"><button class="btn" onclick="calcAppend('0')" style="grid-column:span 2">0</button><button class="btn sec" onclick="calcDot()">.</button><button class="btn accent" onclick="calcEqual()">=</button></div>
+  </div>
+</div>
+
+<!-- ═══════ UNIT CONVERTER ═══════ -->
+<div class="screen scrollable" id="screen-unit">
+  <div class="tabs" id="unitTabs">
+    <button class="tab-btn active" onclick="switchUnitTab(0)" data-i18n="length"></button>
+    <button class="tab-btn" onclick="switchUnitTab(1)" data-i18n="weight"></button>
+    <button class="tab-btn" onclick="switchUnitTab(2)" data-i18n="temp"></button>
+  </div>
+  <div class="card">
+    <div class="field"><label data-i18n="enterVal"></label><input type="number" id="unitInput" placeholder="0" oninput="convertUnit()" style="font-size:22px;padding:13px 14px"></div>
+    <div class="row2">
+      <div class="field" style="margin-bottom:0"><label data-i18n="from"></label><select id="unitFrom" onchange="convertUnit()"></select></div>
+      <button class="swap-btn" onclick="swapUnits()">⇄</button>
+      <div class="field" style="margin-bottom:0"><label data-i18n="to"></label><select id="unitTo" onchange="convertUnit()"></select></div>
+    </div>
+  </div>
+  <div id="unitResult" class="res-box" style="display:none">
+    <div class="res-label" data-i18n="result"></div>
+    <div class="res-val" id="unitResultVal">—</div>
+  </div>
+  <div class="card"><div class="card-title" data-i18n="quickRef"></div><div id="unitFormulaList" style="font-size:12px;color:var(--text2);line-height:2.1"></div></div>
+</div>
+
+<!-- ═══════ CURRENCY ═══════ -->
+<div class="screen scrollable" id="screen-currency">
+  <div class="card" style="background:linear-gradient(135deg,rgba(124,58,237,.13),rgba(167,139,250,.04))">
+    <div class="card-title" data-i18n="currencyConv"></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <button class="pdf-btn" onclick="fetchLiveRates()">🔄 <span data-i18n="refresh"></span></button>
+    </div>
+    <div class="field"><label data-i18n="amount"></label><input type="number" id="curInput" placeholder="0.00" oninput="convertCurrency()" style="font-size:26px;padding:13px 14px"></div>
+    <div class="row2">
+      <div class="field" style="margin-bottom:0"><label data-i18n="from"></label><select id="curFrom" onchange="convertCurrency()"></select></div>
+      <button class="swap-btn" onclick="swapCurrency()">⇄</button>
+      <div class="field" style="margin-bottom:0"><label data-i18n="to"></label><select id="curTo" onchange="convertCurrency()"></select></div>
+    </div>
+  </div>
+  <div id="curResult" class="res-box" style="display:none">
+    <div class="res-label" id="curResLabel">Result</div>
+    <div class="res-val" id="curResVal">—</div>
+    <div class="res-sub" id="curResSub"></div>
+  </div>
+  <div class="card"><div class="card-title" data-i18n="rates"></div><div class="rates-grid" id="ratesGrid"></div></div>
+</div>
+
+<!-- ═══════ PRICE CALC ═══════ -->
+<div class="screen scrollable" id="screen-price">
+  <div class="card">
+    <div class="card-title" data-i18n="priceCalcTitle"></div>
+    <div class="tip" data-i18n="priceTip"></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:10px">
+      <div class="field" style="margin-bottom:0"><label data-i18n="totalWeight"></label><input type="number" id="priceWt" placeholder="50" oninput="calcPrice()" style="font-size:20px"></div>
+      <div class="field" style="margin-bottom:0"><label data-i18n="unit"></label>
+        <select id="priceWtUnit" onchange="calcPrice()"><option>kg</option><option>g</option><option>lb</option><option>oz</option></select>
+      </div>
+    </div>
+    <div class="field"><label data-i18n="totalPrice"></label><input type="number" id="priceAmt" placeholder="1400" oninput="calcPrice()" style="font-size:20px"></div>
+    <div class="field" style="margin-bottom:0"><label data-i18n="customGrams"></label><input type="number" id="priceCustom" placeholder="e.g. 12000 = 12kg" oninput="calcPrice()"></div>
+  </div>
+  <div id="priceResults" style="display:none">
+    <div class="ppg-box"><div class="ppg-label" data-i18n="ppg"></div><div class="ppg-val" id="ppgVal">—</div></div>
+    <div id="priceList"></div>
+  </div>
+</div>
+
+<!-- ═══════ GST ═══════ -->
+<div class="screen scrollable" id="screen-gst">
+  <div class="card">
+    <div class="card-title" data-i18n="gstCalcTitle"></div>
+    <div class="field"><label data-i18n="amount"></label><input type="number" id="gstAmt" placeholder="1000" oninput="calcGST()" style="font-size:22px;padding:13px"></div>
+    <div class="field"><label data-i18n="gstRate"></label>
+      <div class="gst-pills" id="gstPills"></div>
+      <input type="number" id="gstCustom" placeholder="Custom %" oninput="setGSTCustom()" style="margin-top:6px">
+    </div>
+    <div class="tabs" style="margin-top:10px;margin-bottom:0">
+      <button class="tab-btn active" id="gstAdd" onclick="setGSTMode('add')" data-i18n="addGST"></button>
+      <button class="tab-btn" id="gstRem" onclick="setGSTMode('remove')" data-i18n="removeGST"></button>
+    </div>
+  </div>
+  <div id="gstResult" style="display:none">
+    <div class="gst-result-grid" id="gstGrid"></div>
+  </div>
+</div>
+
+<!-- ═══════ EMI ═══════ -->
+<div class="screen scrollable" id="screen-emi">
+  <div class="card">
+    <div class="card-title" data-i18n="emiTitle"></div>
+    <div class="tip" data-i18n="emiTip"></div>
+    <div class="field"><label data-i18n="loanAmt"></label><input type="number" id="emiPrincipal" placeholder="500000" oninput="calcEMI()" style="font-size:20px"></div>
+    <div class="field"><label data-i18n="interestRate"></label><input type="number" id="emiRate" placeholder="8.5" step="0.1" oninput="calcEMI()" style="font-size:20px"></div>
+    <div class="row2">
+      <div class="field" style="margin-bottom:0"><label data-i18n="tenure"></label><input type="number" id="emiTenure" placeholder="24" oninput="calcEMI()"></div>
+      <div class="field" style="margin-bottom:0"><label data-i18n="tenureType"></label>
+        <select id="emiTenureType" onchange="calcEMI()">
+          <option value="months" data-i18n="months"></option>
+          <option value="years" data-i18n="years"></option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div id="emiResult" style="display:none">
+    <div class="emi-result">
+      <div class="emi-main">
+        <div class="emi-main-label" data-i18n="monthlyEMI"></div>
+        <div class="emi-main-val" id="emiMonthly">—</div>
+      </div>
+      <div class="emi-grid">
+        <div class="emi-item"><div class="emi-item-label" data-i18n="principal"></div><div class="emi-item-val" id="emiPrincipalDisp">—</div></div>
+        <div class="emi-item"><div class="emi-item-label" data-i18n="totalInterest"></div><div class="emi-item-val" id="emiInterest">—</div></div>
+        <div class="emi-item"><div class="emi-item-label" data-i18n="totalPayment"></div><div class="emi-item-val" id="emiTotal">—</div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="emiProgress" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:11px;color:var(--text2)">
+        <span data-i18n="principal"></span><span data-i18n="totalInterest"></span>
+      </div>
+    </div>
+    <div id="emiSchedule" class="card"><div class="card-title" data-i18n="emiSchedule"></div><div id="emiScheduleList"></div></div>
+  </div>
+</div>
+
+<!-- ═══════ HISTORY ═══════ -->
+<div class="screen scrollable" id="screen-history">
+  <div class="sec-hdr">
+    <div class="sec-title" id="histCount">0</div>
+    <div style="display:flex;gap:6px">
+      <button class="pdf-btn" onclick="exportPDF()">📄 PDF</button>
+      <button class="clear-btn" onclick="clearHistory()">🗑 <span data-i18n="clearAll"></span></button>
+    </div>
+  </div>
+  <div id="historyList"></div>
+</div>
+
+<!-- ═══════ SETTINGS ═══════ -->
+<div class="screen scrollable" id="screen-settings">
+  <div class="card">
+    <div class="card-title" data-i18n="appearance"></div>
+    <div class="srow">
+      <div><div class="slabel" data-i18n="theme"></div><div class="ssub" data-i18n="themeSub"></div></div>
+      <div class="theme-btns">
+        <button class="tbtn" id="themeLight" onclick="setTheme('light')">☀️</button>
+        <button class="tbtn active" id="themeDark" onclick="setTheme('dark')">🌙</button>
+        <button class="tbtn" id="themeAuto" onclick="setTheme('auto')">⚡</button>
+      </div>
+    </div>
+    <div class="srow" style="flex-direction:column;align-items:flex-start">
+      <div style="margin-bottom:8px"><div class="slabel" data-i18n="accentColor"></div></div>
+      <div class="color-dots" id="colorDots"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" data-i18n="language"></div>
+    <div id="settingsLangGrid" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" data-i18n="about"></div>
+    <div class="srow"><div><div class="slabel">CalcPro v2.0</div><div class="ssub">Multi-language Advanced Calculator</div></div><div style="font-size:22px">🧮</div></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════
+//  I18N — TRANSLATIONS
+// ══════════════════════════════════════════
+const LANGS = {
+  en: {
+    name:'English', flag:'🇬🇧',
+    calculator:'Calculator', units:'Units', currency:'Currency', priceCalc:'Price Calc',
+    gst:'GST', emi:'EMI', history:'History', settings:'Settings',
+    basic:'Basic', scientific:'Scientific', clear:'C', result:'Result',
+    length:'Length', weight:'Weight', temp:'Temp', enterVal:'Enter Value',
+    from:'From', to:'To', quickRef:'Quick Reference',
+    currencyConv:'Currency Converter', refresh:'Refresh Rates',
+    amount:'Amount', rates:'Exchange Rates (vs USD)',
+    priceCalcTitle:'⚖️ Weight × Price Calculator',
+    priceTip:'Example: 50 kg item costs ₹1400 → Get price for 100g, 300g, 12kg instantly',
+    totalWeight:'Total Weight', unit:'Unit', totalPrice:'Total Price (₹)',
+    customGrams:'Custom Weight (grams) — optional', ppg:'Price per gram',
+    gstCalcTitle:'GST Calculator', gstRate:'GST Rate', addGST:'Add GST', removeGST:'Remove GST',
+    emiTitle:'EMI / Loan Calculator',
+    emiTip:'Calculate monthly installment for any loan',
+    loanAmt:'Loan Amount (₹)', interestRate:'Annual Interest Rate (%)',
+    tenure:'Tenure', tenureType:'Type', months:'Months', years:'Years',
+    monthlyEMI:'Monthly EMI', principal:'Principal', totalInterest:'Total Interest',
+    totalPayment:'Total Payment', emiSchedule:'Amortization Schedule',
+    clearAll:'Clear All', appearance:'Appearance', theme:'Theme',
+    themeSub:'Light / Dark / Auto', accentColor:'Accent Color',
+    language:'Language', about:'About', calculations:'calculations',
+  },
+  ta: {
+    name:'தமிழ்', flag:'🇮🇳',
+    calculator:'கால்குலேட்டர்', units:'அலகுகள்', currency:'நாணயம்', priceCalc:'விலை கணக்கு',
+    gst:'ஜிஎஸ்டி', emi:'மாத தவணை', history:'வரலாறு', settings:'அமைப்புகள்',
+    basic:'அடிப்படை', scientific:'அறிவியல்', clear:'நீக்கு', result:'முடிவு',
+    length:'நீளம்', weight:'எடை', temp:'வெப்பநிலை', enterVal:'மதிப்பை உள்ளிடவும்',
+    from:'இருந்து', to:'வரை', quickRef:'விரைவு குறிப்பு',
+    currencyConv:'நாணய மாற்றி', refresh:'புதுப்பி',
+    amount:'தொகை', rates:'மாற்று விகிதங்கள் (USD அடிப்படை)',
+    priceCalcTitle:'⚖️ எடை × விலை கணக்கு',
+    priceTip:'உதாரணம்: 50 கிலோ பொருள் ₹1400 ஆனால் → 100கி, 300கி, 12கிலோ விலை உடனே காட்டும்',
+    totalWeight:'மொத்த எடை', unit:'அலகு', totalPrice:'மொத்த விலை (₹)',
+    customGrams:'தனிப்பயன் எடை (கிராம்) — விருப்பம்', ppg:'ஒரு கிராம் விலை',
+    gstCalcTitle:'ஜிஎஸ்டி கணக்கி', gstRate:'ஜிஎஸ்டி விகிதம்', addGST:'ஜிஎஸ்டி சேர்', removeGST:'ஜிஎஸ்டி நீக்கு',
+    emiTitle:'மாத தவணை / கடன் கணக்கி',
+    emiTip:'எந்த கடனுக்கும் மாத தவணை கணக்கிடுங்கள்',
+    loanAmt:'கடன் தொகை (₹)', interestRate:'வருடாந்திர வட்டி விகிதம் (%)',
+    tenure:'கால அளவு', tenureType:'வகை', months:'மாதங்கள்', years:'ஆண்டுகள்',
+    monthlyEMI:'மாத தவணை', principal:'அசல்', totalInterest:'மொத்த வட்டி',
+    totalPayment:'மொத்த செலுத்துகை', emiSchedule:'தவணை அட்டவணை',
+    clearAll:'அனைத்தும் நீக்கு', appearance:'தோற்றம்', theme:'கருப்பொருள்',
+    themeSub:'வெளிர் / இருண்ட / தன்னியக்க', accentColor:'நிற தேர்வு',
+    language:'மொழி', about:'பற்றி', calculations:'கணக்குகள்',
+  },
+  hi: {
+    name:'हिंदी', flag:'🇮🇳',
+    calculator:'कैलकुलेटर', units:'इकाइयाँ', currency:'मुद्रा', priceCalc:'मूल्य',
+    gst:'जीएसटी', emi:'ईएमआई', history:'इतिहास', settings:'सेटिंग्स',
+    basic:'सामान्य', scientific:'वैज्ञानिक', clear:'साफ', result:'परिणाम',
+    length:'लंबाई', weight:'वजन', temp:'तापमान', enterVal:'मान दर्ज करें',
+    from:'से', to:'तक', quickRef:'त्वरित संदर्भ',
+    currencyConv:'मुद्रा परिवर्तक', refresh:'अपडेट',
+    amount:'राशि', rates:'विनिमय दरें (USD आधार)',
+    priceCalcTitle:'⚖️ वजन × मूल्य कैलकुलेटर',
+    priceTip:'उदाहरण: 50 किलो सामान ₹1400 है → 100ग्राम, 300ग्राम, 12किलो का मूल्य तुरंत',
+    totalWeight:'कुल वजन', unit:'इकाई', totalPrice:'कुल मूल्य (₹)',
+    customGrams:'कस्टम वजन (ग्राम) — वैकल्पिक', ppg:'प्रति ग्राम मूल्य',
+    gstCalcTitle:'जीएसटी कैलकुलेटर', gstRate:'जीएसटी दर', addGST:'जीएसटी जोड़ें', removeGST:'जीएसटी हटाएं',
+    emiTitle:'EMI / लोन कैलकुलेटर',
+    emiTip:'किसी भी लोन के लिए मासिक किस्त कैलकुलेट करें',
+    loanAmt:'लोन राशि (₹)', interestRate:'वार्षिक ब्याज दर (%)',
+    tenure:'अवधि', tenureType:'प्रकार', months:'महीने', years:'वर्ष',
+    monthlyEMI:'मासिक EMI', principal:'मूलधन', totalInterest:'कुल ब्याज',
+    totalPayment:'कुल भुगतान', emiSchedule:'किस्त अनुसूची',
+    clearAll:'सब साफ करें', appearance:'दिखावट', theme:'थीम',
+    themeSub:'लाइट / डार्क / ऑटो', accentColor:'रंग चुनें',
+    language:'भाषा', about:'परिचय', calculations:'गणनाएं',
+  },
+  te: {
+    name:'తెలుగు', flag:'🇮🇳',
+    calculator:'కాలిక్యులేటర్', units:'యూనిట్లు', currency:'కరెన్సీ', priceCalc:'ధర లెక్క',
+    gst:'జిఎస్టి', emi:'నెల వాయిదా', history:'చరిత్ర', settings:'సెట్టింగులు',
+    basic:'సాధారణ', scientific:'శాస్త్రీయ', clear:'క్లియర్', result:'ఫలితం',
+    length:'పొడవు', weight:'బరువు', temp:'ఉష్ణోగ్రత', enterVal:'విలువ నమోదు చేయండి',
+    from:'నుండి', to:'వరకు', quickRef:'శీఘ్ర సూచన',
+    currencyConv:'కరెన్సీ కన్వర్టర్', refresh:'రిఫ్రెష్',
+    amount:'మొత్తం', rates:'మారకం రేట్లు (USD ఆధారం)',
+    priceCalcTitle:'⚖️ బరువు × ధర కాలిక్యులేటర్',
+    priceTip:'ఉదాహరణ: 50 కిలో వస్తువు ₹1400 అయితే → 100గ్రా, 300గ్రా ధర వెంటనే',
+    totalWeight:'మొత్తం బరువు', unit:'యూనిట్', totalPrice:'మొత్తం ధర (₹)',
+    customGrams:'అనుకూల బరువు (గ్రాముల్లో) — ఐచ్ఛికం', ppg:'గ్రాము ధర',
+    gstCalcTitle:'జిఎస్టి కాలిక్యులేటర్', gstRate:'జిఎస్టి రేటు', addGST:'జిఎస్టి చేర్చు', removeGST:'జిఎస్టి తీసివేయి',
+    emiTitle:'EMI / లోన్ కాలిక్యులేటర్',
+    emiTip:'ఏ రుణానికైనా నెలవారీ వాయిదా లెక్కించండి',
+    loanAmt:'రుణ మొత్తం (₹)', interestRate:'వార్షిక వడ్డీ రేటు (%)',
+    tenure:'వ్యవధి', tenureType:'రకం', months:'నెలలు', years:'సంవత్సరాలు',
+    monthlyEMI:'నెలవారీ EMI', principal:'అసలు', totalInterest:'మొత్తం వడ్డీ',
+    totalPayment:'మొత్తం చెల్లింపు', emiSchedule:'వాయిదా పట్టిక',
+    clearAll:'అన్నీ తొలగించు', appearance:'రూపం', theme:'థీమ్',
+    themeSub:'వెలుతురు / చీకటి / ఆటో', accentColor:'రంగు ఎంపిక',
+    language:'భాష', about:'గురించి', calculations:'లెక్కలు',
+  },
+  ar: {
+    name:'العربية', flag:'🇸🇦',
+    calculator:'آلة حاسبة', units:'وحدات', currency:'عملة', priceCalc:'حساب السعر',
+    gst:'ضريبة', emi:'قسط', history:'السجل', settings:'الإعدادات',
+    basic:'أساسي', scientific:'علمي', clear:'مسح', result:'النتيجة',
+    length:'الطول', weight:'الوزن', temp:'الحرارة', enterVal:'أدخل القيمة',
+    from:'من', to:'إلى', quickRef:'مرجع سريع',
+    currencyConv:'محول العملات', refresh:'تحديث',
+    amount:'المبلغ', rates:'أسعار الصرف',
+    priceCalcTitle:'⚖️ حاسبة الوزن × السعر',
+    priceTip:'مثال: 50 كيلو بـ 1400 ₹ ← سعر 100غ، 300غ فوراً',
+    totalWeight:'إجمالي الوزن', unit:'الوحدة', totalPrice:'السعر الكلي (₹)',
+    customGrams:'وزن مخصص (جرام) — اختياري', ppg:'سعر الجرام',
+    gstCalcTitle:'حاسبة ضريبة القيمة المضافة', gstRate:'نسبة الضريبة', addGST:'إضافة ضريبة', removeGST:'إزالة الضريبة',
+    emiTitle:'حاسبة القسط الشهري',
+    emiTip:'احسب القسط الشهري لأي قرض',
+    loanAmt:'مبلغ القرض', interestRate:'معدل الفائدة السنوي (%)',
+    tenure:'المدة', tenureType:'النوع', months:'أشهر', years:'سنوات',
+    monthlyEMI:'القسط الشهري', principal:'رأس المال', totalInterest:'إجمالي الفوائد',
+    totalPayment:'إجمالي الدفع', emiSchedule:'جدول السداد',
+    clearAll:'مسح الكل', appearance:'المظهر', theme:'السمة',
+    themeSub:'فاتح / داكن / تلقائي', accentColor:'لون التمييز',
+    language:'اللغة', about:'حول', calculations:'حسابات',
+  },
+};
+
+let currentLang = localStorage.getItem('lang') || 'ta'; // Default Tamil!
+
+function t(key) { return (LANGS[currentLang] || LANGS.en)[key] || LANGS.en[key] || key; }
+
+function applyLang() {
+  // RTL for Arabic
+  document.body.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+  document.body.classList.toggle('tamil', currentLang === 'ta');
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    el.textContent = t(key);
+  });
+
+  // Nav
+  buildNav();
+  // Lang buttons highlight
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
+  document.querySelectorAll('.settings-lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
+
+  // Unit tabs
+  const utabs = document.getElementById('unitTabs').querySelectorAll('.tab-btn');
+  ['length','weight','temp'].forEach((k,i) => utabs[i].textContent = t(k));
+
+  // EMI select options
+  const tt = document.getElementById('emiTenureType');
+  if (tt) { tt.options[0].textContent = t('months'); tt.options[1].textContent = t('years'); }
+
+  localStorage.setItem('lang', currentLang);
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  applyLang();
+}
+
+function buildLangBar() {
+  const bar = document.getElementById('langBar');
+  bar.innerHTML = '';
+  Object.entries(LANGS).forEach(([code, l]) => {
+    const b = document.createElement('button');
+    b.className = 'lang-btn' + (code === currentLang ? ' active' : '');
+    b.dataset.lang = code;
+    b.textContent = l.flag + ' ' + l.name;
+    b.onclick = () => setLang(code);
+    bar.appendChild(b);
+  });
+
+  // Settings lang grid
+  const sg = document.getElementById('settingsLangGrid');
+  sg.innerHTML = '';
+  Object.entries(LANGS).forEach(([code, l]) => {
+    const b = document.createElement('button');
+    b.className = 'tbtn settings-lang-btn' + (code === currentLang ? ' active' : '');
+    b.dataset.lang = code;
+    b.style.fontSize = '13px';
+    b.textContent = l.flag + ' ' + l.name;
+    b.onclick = () => setLang(code);
+    sg.appendChild(b);
+  });
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+const NAV_ITEMS = [
+  {key:'calculator', screen:'calculator', icon:'🔢'},
+  {key:'units', screen:'unit', icon:'📏'},
+  {key:'currency', screen:'currency', icon:'💱'},
+  {key:'priceCalc', screen:'price', icon:'🛒'},
+  {key:'gst', screen:'gst', icon:'🧾'},
+  {key:'emi', screen:'emi', icon:'🏦'},
+  {key:'history', screen:'history', icon:'📜'},
+  {key:'settings', screen:'settings', icon:'🎨'},
+];
+
+function buildNav() {
+  const nav = document.getElementById('mainNav');
+  nav.innerHTML = '';
+  NAV_ITEMS.forEach(item => {
+    const b = document.createElement('button');
+    const activeScreen = document.querySelector('.screen.active');
+    const isActive = activeScreen && activeScreen.id === 'screen-' + item.screen;
+    b.className = 'nav-btn' + (isActive ? ' active' : '');
+    b.dataset.screen = item.screen;
+    b.innerHTML = `<span>${item.icon}</span>${t(item.key)}`;
+    b.onclick = () => showScreen(item.screen);
+    nav.appendChild(b);
+  });
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  buildNav();
+  if (name === 'history') renderHistory();
+}
+
+// ══════════════════════════════════════════
+//  THEME & COLORS
+// ══════════════════════════════════════════
+const COLORS = {
+  Purple:{a:'#7C3AED',l:'#a78bfa',d:'#5b21b6'},
+  Blue:{a:'#2563EB',l:'#60a5fa',d:'#1d4ed8'},
+  Green:{a:'#059669',l:'#34d399',d:'#047857'},
+  Orange:{a:'#EA580C',l:'#fb923c',d:'#c2410c'},
+  Pink:{a:'#DB2777',l:'#f472b6',d:'#be185d'},
+  Teal:{a:'#0891B2',l:'#22d3ee',d:'#0e7490'},
+  Rose:{a:'#E11D48',l:'#fb7185',d:'#be123c'},
+};
+let currentColor = localStorage.getItem('accentColor') || 'Purple';
+let currentTheme = localStorage.getItem('theme') || 'dark';
+
+function applyColor(name) {
+  currentColor = name;
+  const c = COLORS[name];
+  const r = document.documentElement.style;
+  r.setProperty('--accent', c.a);
+  r.setProperty('--accent-light', c.l);
+  r.setProperty('--accent-dark', c.d);
+  localStorage.setItem('accentColor', name);
+  document.querySelectorAll('.cdot').forEach(d => d.classList.toggle('active', d.dataset.color === name));
+}
+
+function buildColorDots() {
+  const c = document.getElementById('colorDots');
+  c.innerHTML = '';
+  Object.entries(COLORS).forEach(([name, col]) => {
+    const d = document.createElement('div');
+    d.className = 'cdot' + (name === currentColor ? ' active' : '');
+    d.style.background = col.a;
+    d.dataset.color = name;
+    d.title = name;
+    d.onclick = () => applyColor(name);
+    c.appendChild(d);
+  });
+}
+
+function setTheme(mode) {
+  currentTheme = mode;
+  localStorage.setItem('theme', mode);
+  const dark = mode === 'dark' || (mode === 'auto' && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  document.body.classList.toggle('light', !dark);
+  document.getElementById('themeToggle').textContent = dark ? '🌙' : '☀️';
+  ['Light','Dark','Auto'].forEach(m => document.getElementById('theme'+m).classList.toggle('active', mode === m.toLowerCase()));
+}
+
+function toggleTheme() {
+  setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+}
+
+// ══════════════════════════════════════════
+//  CALCULATOR
+// ══════════════════════════════════════════
+let calcExpr = '', calcResult = '0', calcNew = false, isDeg = true;
+
+function updDisp(anim=false) {
+  document.getElementById('dispExpr').textContent = calcExpr || '0';
+  const r = document.getElementById('dispResult');
+  r.textContent = calcResult;
+  r.classList.toggle('error', calcResult === 'Error');
+  if (anim) { r.classList.remove('pop'); void r.offsetWidth; r.classList.add('pop'); }
+}
+
+function calcAppend(ch) {
+  if (calcNew && !'+-×÷%^'.includes(ch)) { calcExpr = ''; calcNew = false; }
+  calcExpr += ch;
+  updDisp();
+}
+function sciApp(ch) { if (calcNew) { calcExpr = ''; calcNew = false; } calcExpr += ch; updDisp(); }
+function calcDot() { const p = calcExpr.split(/[\+\-×÷]/); if (!p[p.length-1].includes('.')) calcAppend('.'); }
+function calcBackspace() { calcExpr = calcExpr.slice(0,-1); updDisp(); }
+function calcClear() { calcExpr=''; calcResult='0'; calcNew=false; updDisp(); }
+function calcSign() { if (calcResult!=='0'&&calcNew){calcResult=String(-parseFloat(calcResult));updDisp(true);}else calcAppend('×-1'); }
+function toggleDeg() { isDeg=!isDeg; const b=document.getElementById('degToggle'); b.textContent=isDeg?'DEG':'RAD'; b.classList.toggle('on',isDeg); }
+
+function calcEqual() {
+  if (!calcExpr) return;
+  const res = evaluate(calcExpr);
+  addHistory(calcExpr, res, 'Calc');
+  calcResult = res; calcNew = true;
+  updDisp(true);
+}
+
+function evaluate(raw) {
+  try {
+    let e = raw.replace(/×/g,'*').replace(/÷/g,'/').replace(/π/g,String(Math.PI)).replace(/\be\b/g,String(Math.E));
+    e = e.replace(/√\(/g,'Math.sqrt(').replace(/ln\(/g,'Math.log(').replace(/log\(/g,'Math.log10(');
+    const fns = isDeg
+      ? { sin:x=>Math.sin(x*Math.PI/180), cos:x=>Math.cos(x*Math.PI/180), tan:x=>Math.tan(x*Math.PI/180),
+          asin:x=>Math.asin(x)*180/Math.PI, acos:x=>Math.acos(x)*180/Math.PI, atan:x=>Math.atan(x)*180/Math.PI }
+      : { sin:Math.sin, cos:Math.cos, tan:Math.tan, asin:Math.asin, acos:Math.acos, atan:Math.atan };
+    e = e.replace(/\b(a?sin|a?cos|a?tan)\(/g, '__$1(');
+    const ctx = { Math, ...Object.fromEntries(Object.entries(fns).map(([k,v])=>['__'+k,v])) };
+    // eslint-disable-next-line no-new-func
+    const r = new Function(...Object.keys(ctx), `"use strict";return(${e})`)(...Object.values(ctx));
+    if (!isFinite(r)||isNaN(r)) return 'Error';
+    return parseFloat(r.toFixed(10)) % 1 === 0 ? String(Math.round(r)) : String(parseFloat(r.toFixed(10)));
+  } catch { return 'Error'; }
+}
+
+function switchCalcTab(tab) {
+  document.getElementById('basicGrid').style.display = tab==='basic'?'grid':'none';
+  document.getElementById('basicExtra').style.display = tab==='basic'?'grid':'none';
+  document.getElementById('sciGrid').style.display = tab==='sci'?'flex':'none';
+  document.getElementById('tabBasic').classList.toggle('active', tab==='basic');
+  document.getElementById('tabSci').classList.toggle('active', tab==='sci');
+}
+
+// ══════════════════════════════════════════
+//  UNIT CONVERTER
+// ══════════════════════════════════════════
+const UNIT_DATA = [
+  { units: {Meter:1,Kilometer:.001,Centimeter:100,Millimeter:1000,Mile:.000621371,Yard:1.09361,Foot:3.28084,Inch:39.3701}, formulas:['1 km = 1000 m','1 mile = 1.609 km','1 inch = 2.54 cm','1 foot = 30.48 cm'] },
+  { units: {Kilogram:1,Gram:1000,Milligram:1e6,Pound:2.20462,Ounce:35.274,Ton:.001,Quintal:.01}, formulas:['1 kg = 1000 g','1 lb = 453.6 g','1 ton = 1000 kg','1 oz = 28.35 g'] },
+  { units: {Celsius:1,Fahrenheit:1,Kelvin:1}, formulas:['°F = °C × 9/5 + 32','K = °C + 273.15','0°C = 32°F = 273K','100°C = 212°F'] },
+];
+let unitTab = 0;
+
+function switchUnitTab(i) {
+  unitTab = i;
+  document.querySelectorAll('#unitTabs .tab-btn').forEach((b,j) => b.classList.toggle('active', i===j));
+  populateUnitSelects();
+  document.getElementById('unitInput').value = '';
+  document.getElementById('unitResult').style.display = 'none';
+  document.getElementById('unitFormulaList').innerHTML = UNIT_DATA[i].formulas.map(f=>`<div>• ${f}</div>`).join('');
+}
+
+function populateUnitSelects() {
+  const keys = Object.keys(UNIT_DATA[unitTab].units);
+  ['unitFrom','unitTo'].forEach((id,i) => {
+    const sel = document.getElementById(id); sel.innerHTML = '';
+    keys.forEach((u,j) => { const o=document.createElement('option'); o.value=u; o.textContent=u; if(i===0&&j===0)o.selected=true; if(i===1&&j===1)o.selected=true; sel.appendChild(o); });
+  });
+}
+
+function convertUnit() {
+  const val = parseFloat(document.getElementById('unitInput').value);
+  const fr = document.getElementById('unitFrom').value;
+  const to = document.getElementById('unitTo').value;
+  if (isNaN(val)) { document.getElementById('unitResult').style.display='none'; return; }
+  let r;
+  if (unitTab === 2) {
+    let c = fr==='Fahrenheit'?(val-32)*5/9:fr==='Kelvin'?val-273.15:val;
+    r = to==='Fahrenheit'?c*9/5+32:to==='Kelvin'?c+273.15:c;
+  } else {
+    const u = UNIT_DATA[unitTab].units;
+    r = val / u[fr] * u[to];
+  }
+  const fmt = v => Math.abs(v)>=.0001&&Math.abs(v)<1e10 ? parseFloat(v.toFixed(6)).toString() : v.toExponential(4);
+  document.getElementById('unitResultVal').textContent = `${fmt(r)} ${to}`;
+  document.getElementById('unitResult').style.display = 'block';
+}
+
+function swapUnits() {
+  const a=document.getElementById('unitFrom'), b=document.getElementById('unitTo');
+  [a.value,b.value]=[b.value,a.value]; convertUnit();
+}
+
+// ══════════════════════════════════════════
+//  CURRENCY
+// ══════════════════════════════════════════
+const CURRENCIES = {
+  USD:{rate:1,sym:'$'},INR:{rate:83.5,sym:'₹'},EUR:{rate:.92,sym:'€'},
+  GBP:{rate:.79,sym:'£'},JPY:{rate:149.5,sym:'¥'},AUD:{rate:1.53,sym:'A$'},
+  CAD:{rate:1.35,sym:'C$'},CHF:{rate:.90,sym:'Fr'},CNY:{rate:7.24,sym:'¥'},
+  SGD:{rate:1.34,sym:'S$'},AED:{rate:3.67,sym:'د.إ'},SAR:{rate:3.75,sym:'﷼'},
+  MYR:{rate:4.72,sym:'RM'},THB:{rate:35.7,sym:'฿'},IDR:{rate:15600,sym:'Rp'},
+};
+
+async function fetchLiveRates() {
+  try {
+    const r = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+    const d = await r.json();
+    Object.keys(CURRENCIES).forEach(c => { if(d.rates[c]) CURRENCIES[c].rate = d.rates[c]; });
+    buildRatesGrid();
+    convertCurrency();
+    alert('✅ ' + (currentLang==='ta' ? 'விகிதங்கள் புதுப்பிக்கப்பட்டன!' : 'Rates updated!'));
+  } catch { alert('⚠️ ' + (currentLang==='ta' ? 'இணைப்பு தோல்வி. பழைய விகிதங்கள் பயன்படுத்தப்படுகின்றன.' : 'Connection failed. Using cached rates.')); }
+}
+
+function buildCurrencySelects() {
+  ['curFrom','curTo'].forEach(id => {
+    const sel=document.getElementById(id); sel.innerHTML='';
+    Object.entries(CURRENCIES).forEach(([code,c]) => {
+      const o=document.createElement('option'); o.value=code; o.textContent=`${c.sym} ${code}`;
+      if(id==='curFrom'&&code==='INR') o.selected=true;
+      if(id==='curTo'&&code==='USD') o.selected=true;
+      sel.appendChild(o);
+    });
+  });
+  buildRatesGrid();
+}
+
+function buildRatesGrid() {
+  document.getElementById('ratesGrid').innerHTML = Object.entries(CURRENCIES)
+    .map(([c,v])=>`<div class="rate-item"><span class="rate-cc">${v.sym} ${c}</span><span class="rate-val">${v.rate}</span></div>`).join('');
+}
+
+function convertCurrency() {
+  const val=parseFloat(document.getElementById('curInput').value);
+  const fr=document.getElementById('curFrom').value, to=document.getElementById('curTo').value;
+  if(isNaN(val)){document.getElementById('curResult').style.display='none';return;}
+  const res = val/CURRENCIES[fr].rate*CURRENCIES[to].rate;
+  const fmt = v => v>=1?v.toFixed(2):parseFloat(v.toFixed(6)).toString();
+  const rate = CURRENCIES[to].rate/CURRENCIES[fr].rate;
+  document.getElementById('curResLabel').textContent = `${fr} → ${to}`;
+  document.getElementById('curResVal').textContent = `${CURRENCIES[to].sym} ${fmt(res)}`;
+  document.getElementById('curResSub').textContent = `1 ${fr} = ${fmt(rate)} ${to}`;
+  document.getElementById('curResult').style.display='block';
+  addHistory(`${val} ${fr}→${to}`, `${CURRENCIES[to].sym}${fmt(res)}`, 'Curr');
+}
+
+function swapCurrency() {
+  const a=document.getElementById('curFrom'),b=document.getElementById('curTo');
+  [a.value,b.value]=[b.value,a.value]; convertCurrency();
+}
+
+// ══════════════════════════════════════════
+//  PRICE CALCULATOR
+// ══════════════════════════════════════════
+function toGrams(v,u){return{kg:1000,g:1,lb:453.592,oz:28.3495}[u]*v;}
+
+function calcPrice() {
+  const wt=parseFloat(document.getElementById('priceWt').value);
+  const amt=parseFloat(document.getElementById('priceAmt').value);
+  const unit=document.getElementById('priceWtUnit').value;
+  const custom=parseFloat(document.getElementById('priceCustom').value);
+  const res=document.getElementById('priceResults');
+  if(!wt||!amt||wt<=0||amt<=0){res.style.display='none';return;}
+  const tg=toGrams(wt,unit), ppg=amt/tg;
+  document.getElementById('ppgVal').textContent=`₹ ${ppg<1?ppg.toFixed(4):ppg.toFixed(2)}`;
+  res.style.display='block';
+  const presets=[{l:'1 gram',g:1},{l:'100 grams',g:100},{l:'250 grams',g:250},{l:'500 grams',g:500},{l:'1 kg',g:1000},{l:'2 kg',g:2000},{l:'5 kg',g:5000},{l:'10 kg',g:10000},{l:'25 kg',g:25000}];
+  if(!isNaN(custom)&&custom>0) presets.unshift({l:`Custom: ${custom>=1000?(custom/1000)+'kg':custom+'g'}`,g:custom});
+  document.getElementById('priceList').innerHTML = presets.map((p,i)=>{
+    const price=ppg*p.g;
+    return `<div class="pi" style="animation-delay:${i*25}ms"><span class="pi-label">${p.l}</span><span class="pi-val">₹ ${price>=1?price.toFixed(2):price.toFixed(4)}</span></div>`;
+  }).join('');
+  addHistory(`${wt}${unit}=₹${amt}`,`₹${ppg.toFixed(3)}/g`,'Price');
+}
+
+// ══════════════════════════════════════════
+//  GST CALCULATOR
+// ══════════════════════════════════════════
+let gstRate = 18, gstMode = 'add';
+const GST_SLABS = [0, 5, 12, 18, 28];
+
+function buildGSTpills() {
+  document.getElementById('gstPills').innerHTML = GST_SLABS.map(r =>
+    `<div class="gst-pill${r===gstRate?' active':''}" onclick="setGSTRate(${r})">${r}%</div>`
+  ).join('');
+}
+
+function setGSTRate(r) { gstRate=r; document.getElementById('gstCustom').value=''; buildGSTpills(); calcGST(); }
+function setGSTCustom() { gstRate=parseFloat(document.getElementById('gstCustom').value)||0; buildGSTpills(); calcGST(); }
+function setGSTMode(m) { gstMode=m; document.getElementById('gstAdd').classList.toggle('active',m==='add'); document.getElementById('gstRem').classList.toggle('active',m==='remove'); calcGST(); }
+
+function calcGST() {
+  const amt=parseFloat(document.getElementById('gstAmt').value);
+  const res=document.getElementById('gstResult');
+  if(!amt||amt<=0){res.style.display='none';return;}
+  let base,gstAmt,total;
+  if(gstMode==='add'){base=amt;gstAmt=amt*gstRate/100;total=amt+gstAmt;}
+  else{total=amt;base=amt/(1+gstRate/100);gstAmt=amt-base;}
+  const fmt=v=>v.toFixed(2);
+  const cgst=gstAmt/2, sgst=gstAmt/2;
+  res.style.display='block';
+  document.getElementById('gstGrid').innerHTML=`
+    <div class="gst-box"><div class="gst-box-label">Base Amount</div><div class="gst-box-val">₹ ${fmt(base)}</div></div>
+    <div class="gst-box"><div class="gst-box-label">GST (${gstRate}%)</div><div class="gst-box-val">₹ ${fmt(gstAmt)}</div></div>
+    <div class="gst-box"><div class="gst-box-label">CGST (${gstRate/2}%)</div><div class="gst-box-val">₹ ${fmt(cgst)}</div></div>
+    <div class="gst-box"><div class="gst-box-label">SGST (${gstRate/2}%)</div><div class="gst-box-val">₹ ${fmt(sgst)}</div></div>
+    <div class="gst-box highlight" style="grid-column:span 2"><div class="gst-box-label">${gstMode==='add'?'Total (incl. GST)':'Pre-GST Amount'}</div><div class="gst-box-val">₹ ${fmt(total)}</div></div>
+  `;
+  addHistory(`₹${fmt(base)} + GST${gstRate}%`, `₹${fmt(total)}`, 'GST');
+}
+
+// ══════════════════════════════════════════
+//  EMI CALCULATOR
+// ══════════════════════════════════════════
+function calcEMI() {
+  const P=parseFloat(document.getElementById('emiPrincipal').value);
+  const annRate=parseFloat(document.getElementById('emiRate').value);
+  const tenureVal=parseFloat(document.getElementById('emiTenure').value);
+  const tenureType=document.getElementById('emiTenureType').value;
+  const res=document.getElementById('emiResult');
+  if(!P||!annRate||!tenureVal||P<=0||annRate<=0||tenureVal<=0){res.style.display='none';return;}
+  const n = tenureType==='years' ? tenureVal*12 : tenureVal;
+  const r = annRate/12/100;
+  const emi = P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+  const totalPayment = emi*n;
+  const totalInterest = totalPayment-P;
+  const fmt = v => v>=1000 ? '₹'+Number(v.toFixed(0)).toLocaleString('en-IN') : '₹'+v.toFixed(2);
+  res.style.display='block';
+  document.getElementById('emiMonthly').textContent = fmt(emi);
+  document.getElementById('emiPrincipalDisp').textContent = fmt(P);
+  document.getElementById('emiInterest').textContent = fmt(totalInterest);
+  document.getElementById('emiTotal').textContent = fmt(totalPayment);
+  const pct = (P/totalPayment*100).toFixed(1);
+  document.getElementById('emiProgress').style.width = pct+'%';
+
+  // Schedule (show first 12 months)
+  let balance=P, rows='';
+  for(let i=1;i<=Math.min(n,12);i++){
+    const int=balance*r, prin=emi-int; balance-=prin;
+    rows+=`<div style="display:flex;gap:8px;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="width:30px;color:var(--text2)">${i}</span>
+      <span style="flex:1;font-family:'Space Mono',monospace">₹${prin.toFixed(0)}</span>
+      <span style="flex:1;font-family:'Space Mono',monospace;color:var(--error)">₹${int.toFixed(0)}</span>
+      <span style="flex:1;font-family:'Space Mono',monospace;color:var(--text2)">₹${Math.max(0,balance).toFixed(0)}</span>
+    </div>`;
+  }
+  if(n>12) rows+=`<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">... ${n-12} more months</div>`;
+  document.getElementById('emiScheduleList').innerHTML=`
+    <div style="display:flex;gap:8px;font-size:11px;font-weight:700;color:var(--text2);padding:0 0 6px;border-bottom:1px solid var(--border)">
+      <span style="width:30px">#</span><span style="flex:1">Principal</span><span style="flex:1">Interest</span><span style="flex:1">Balance</span>
+    </div>${rows}`;
+  addHistory(`EMI ₹${P.toFixed(0)} @ ${annRate}% ${n}mo`, fmt(emi), 'EMI');
+}
+
+// ══════════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════════
+let history = JSON.parse(localStorage.getItem('calcHistory')||'[]');
+
+function addHistory(expr, result, type='Calc') {
+  if(result==='Error') return;
+  history.unshift({expr,result,type,time:Date.now()});
+  if(history.length>100) history=history.slice(0,100);
+  localStorage.setItem('calcHistory', JSON.stringify(history));
+}
+
+function renderHistory() {
+  const list=document.getElementById('historyList');
+  document.getElementById('histCount').textContent = `${history.length} ${t('calculations')}`;
+  if(!history.length){list.innerHTML=`<div class="hist-empty"><div class="ei">🕐</div><div>${t('history')}</div></div>`;return;}
+  const rel=ts=>{const d=(Date.now()-ts)/1000;if(d<60)return'Just now';if(d<3600)return`${~~(d/60)}m ago`;if(d<86400)return`${~~(d/3600)}h ago`;return new Date(ts).toLocaleDateString();};
+  const ico={Calc:'🔢',Price:'🛒',Curr:'💱',GST:'🧾',EMI:'🏦'};
+  list.innerHTML=history.map((h,i)=>`
+    <div class="hi" style="animation-delay:${i*18}ms">
+      <div class="hi-badge">${ico[h.type]||'🔢'}</div>
+      <div class="hi-body"><div class="hi-expr">${h.expr}</div><div class="hi-time">${rel(h.time)}</div></div>
+      <div class="hi-res">${h.result}</div>
+    </div>`).join('');
+}
+
+function clearHistory() {
+  if(confirm(t('clearAll')+'?')){history=[];localStorage.removeItem('calcHistory');renderHistory();}
+}
+
+// ══════════════════════════════════════════
+//  PDF EXPORT
+// ══════════════════════════════════════════
+async function exportPDF() {
+  if(!history.length){alert('No history to export');return;}
+  try {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(18); doc.text('CalcPro — Calculation History', 14, 20);
+    doc.setFontSize(10); doc.setFont('helvetica','normal');
+    doc.text('Generated: ' + new Date().toLocaleString(), 14, 30);
+    doc.line(14,33,196,33);
+    let y=40;
+    history.forEach((h,i)=>{
+      if(y>270){doc.addPage();y=20;}
+      doc.setFont('helvetica','bold'); doc.setFontSize(10);
+      doc.text(`${i+1}. [${h.type}] ${h.expr}`, 14, y);
+      doc.setFont('helvetica','normal'); doc.setTextColor(100);
+      doc.text(`= ${h.result}  |  ${new Date(h.time).toLocaleString()}`, 20, y+5);
+      doc.setTextColor(0); y+=14;
+    });
+    doc.save('CalcPro_History.pdf');
+  } catch(e) { alert('PDF export failed: '+e.message); }
+}
+
+// ══════════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════════
+document.addEventListener('keydown', e=>{
+  const s=document.querySelector('.screen.active');
+  if(!s||s.id!=='screen-calculator') return;
+  if('0123456789'.includes(e.key)) calcAppend(e.key);
+  else if(e.key==='+') calcAppend('+');
+  else if(e.key==='-') calcAppend('-');
+  else if(e.key==='*') calcAppend('×');
+  else if(e.key==='/'){e.preventDefault();calcAppend('÷');}
+  else if(e.key==='%') calcAppend('%');
+  else if(e.key==='.') calcDot();
+  else if(e.key==='Enter'||e.key==='=') calcEqual();
+  else if(e.key==='Backspace') calcBackspace();
+  else if(e.key==='Escape') calcClear();
+  else if(e.key==='(') calcAppend('(');
+  else if(e.key===')') calcAppend(')');
+});
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+function init() {
+  applyColor(currentColor);
+  buildColorDots();
+  buildLangBar();
+  buildNav();
+  applyLang();
+  setTheme(currentTheme);
+  populateUnitSelects();
+  document.getElementById('unitFormulaList').innerHTML = UNIT_DATA[0].formulas.map(f=>`<div>• ${f}</div>`).join('');
+  buildCurrencySelects();
+  buildGSTpills();
+}
+
+init();
+</script>
+</body>
+</html>
